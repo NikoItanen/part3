@@ -3,6 +3,13 @@ const app = express()
 
 app.use(express.json())
 
+const info = () => {
+  const date = new Date();
+  const infoString = `<p>Phonebook has info for ${persons.length} people.</p>
+    <p>${date.toString()}</p>`
+  return infoString
+}
+
 let persons = [
     {
       name: "Arto Hellas",
@@ -30,6 +37,12 @@ let persons = [
     response.json(persons)
   })
 
+
+  app.get('/info', (request, response) => {
+    response.send(info())
+  })
+
 const PORT = 3001
 app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 })
