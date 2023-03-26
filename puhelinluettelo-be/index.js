@@ -1,5 +1,10 @@
-const express = require('express')
+const { response, request } = require('express');
+const express = require('express');
+const morgan = require('morgan');
+
 const app = express()
+
+app.use(morgan('tiny'))
 
 app.use(express.json())
 
@@ -49,10 +54,54 @@ let persons = [
 
   })
 
-
   app.get('/info', (request, response) => {
     response.send(info())
   })
+
+
+  app.delete('/api/persons/:id', (request, response) => {
+    const id = Number(request.params.id)
+    persons = persons.filter(person => person.id !== id)
+  
+    response.status(204).end()
+  })
+
+  app.post('/api/persons', (request, response) => {
+    const body = request.body
+
+    // Luodaan ID henkilölle.
+    let id = Math.floor(Math.random() * 10000) + 1
+
+    // Varmistetaan, että samanlaista tunnistetta ei ole olemassa.
+    while (persons.find(person => person.id === id)) {
+      id = Math.floor(Math.random() * 10000) + 1
+    }
+
+    
+
+    if (!body.name || !body.number) {
+      return response.status(400).json({
+        error: 'name or number is missing'
+      })
+    }
+
+    const person = {
+      name: body.name,
+      number: body.number,
+      id: id
+    }
+    
+    while (persons.find(person => person.name === body.name))
+      return response.status(400).json({
+        error: 'name must be unique'
+      })
+
+
+    persons = persons.concat(person)
+
+    response.json(person)
+  })
+
 
 const PORT = 3001
 app.listen(PORT, () => {
