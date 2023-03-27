@@ -1,20 +1,18 @@
+require('dotenv').config()
 const { response, request } = require('express');
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors')
 const http = require('http')
 const path = require('path')
-
-
+const mongoose = require('mongoose')
+const Person = require('./models/person')
+const buildPath = path.join(__dirname, '..', 'puhelinluettelo-fe', 'build');
 const app = express();
 
 app.use(morgan('tiny'))
 app.use(express.json())
 app.use(cors())
-
-
-const buildPath = path.join(__dirname, '..', 'puhelinluettelo-fe', 'build');
-
 app.use(express.static(buildPath))
 
 const info = () => {
@@ -24,42 +22,17 @@ const info = () => {
   return infoString
 }
 
-let persons = [
-    {
-      name: "Arto Hellas",
-      number: "040-123456",
-      id: 1
-    },
-    {
-      name: "Ada Lovelace",
-      number: "39-44-5323523",
-      id: 2
-    },
-    {
-      name: "Dan Abramov",
-      number: "12-43-234345",
-      id: 3
-    },
-    {
-      name: "Mary Poppendieck",
-      number: "39-23-6423122",
-      id: 4
-    }
-  ]
 
   app.get('/api/persons', (request, response)=> {
-    response.json(persons)
+    Person.find({}).then(persons => {
+      response.json(persons)
+    })
   })
 
   app.get('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    const person = persons.find(person => person.id === id)
-
-    if (person) {
+    Person.findById(request.params.id).then(person => {
       response.json(person)
-    } else {
-      response.status(404).end()
-    }
+    })
   })
 
   app.get('/info', (request, response) => {
@@ -68,52 +41,36 @@ let persons = [
 
 
   app.delete('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    persons = persons.filter(person => person.id !== id)
-  
-    response.status(204).end()
+    const id = request.params.id;
+      Person.findByIdAndDelete(id).then(() => {
+      response.status(204).end();
+  })
   })
 
   app.post('/api/persons', (request, response) => {
     const body = request.body
 
-    // Luodaan ID henkilölle.
-    let id = Math.floor(Math.random() * 10000) + 1
-
-    // Varmistetaan, että samanlaista tunnistetta ei ole olemassa.
-    while (persons.find(person => person.id === id)) {
-      id = Math.floor(Math.random() * 10000) + 1
+    if (body.name === undefined || body.number === undefined) {
+      return response.status(400).json({error: 'Name or number is missing'})
     }
 
-    
-
-    if (!body.name || !body.number) {
-      return response.status(400).json({
-        error: 'name or number is missing'
-      })
-    }
-
-    const person = {
+    const person = new Person({
       name: body.name,
-      number: body.number,
-      id: id
-    }
-    
+      number: body.number
+    })
+
     while (persons.find(person => person.name === body.name))
       return response.status(400).json({
         error: 'name must be unique'
       })
 
-
-    persons = persons.concat(person)
-
-    response.json(person)
-  })
-
+    person.save().then(savedNote => {
+      response.json(savedNote)
+    })
+})
 
 
-
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 })
