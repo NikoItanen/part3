@@ -1,12 +1,21 @@
 const { response, request } = require('express');
 const express = require('express');
 const morgan = require('morgan');
+const cors = require('cors')
+const http = require('http')
+const path = require('path')
 
-const app = express()
+
+const app = express();
 
 app.use(morgan('tiny'))
-
 app.use(express.json())
+app.use(cors())
+
+
+const buildPath = path.join(__dirname, '..', 'puhelinluettelo-fe', 'build');
+
+app.use(express.static(buildPath))
 
 const info = () => {
   const date = new Date();
@@ -51,7 +60,6 @@ let persons = [
     } else {
       response.status(404).end()
     }
-
   })
 
   app.get('/info', (request, response) => {
@@ -103,7 +111,9 @@ let persons = [
   })
 
 
-const PORT = 3001
+
+
+const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 })
