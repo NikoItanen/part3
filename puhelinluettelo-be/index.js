@@ -29,10 +29,18 @@ const info = () => {
     })
   })
 
-  app.get('/api/persons/:id', (request, response) => {
-    Person.findById(request.params.id).then(person => {
-      response.json(person)
-    })
+  app.get('/api/persons/:id', (request, response, next) => {
+    Person.findById(request.params.id)
+      .then(person => {
+        if (person) {
+          response.json(person)
+        } else {
+          const error = new Error('Person not found')
+          error.name = 'NotFound'
+          throw error
+        }
+      })
+      .catch(error => next(error))
   })
 
   app.get('/info', (request, response) => {
@@ -47,7 +55,7 @@ const info = () => {
   })
   })
 
-  app.post('/api/persons', (request, response) => {
+  app.post('/api/persons', async (request, response) => {
     const body = request.body
 
     if (body.name === undefined || body.number === undefined) {
@@ -57,17 +65,16 @@ const info = () => {
     const person = new Person({
       name: body.name,
       number: body.number
-    })
+    });
 
-    while (persons.find(person => person.name === body.name))
-      return response.status(400).json({
-        error: 'name must be unique'
-      })
 
-    person.save().then(savedNote => {
-      response.json(savedNote)
-    })
-})
+    try {
+      const savedPerson = await person.save();
+      response.json(savedPerson);
+    } catch (error) {
+      next(error)
+    }
+});
 
 
 const PORT = process.env.PORT
